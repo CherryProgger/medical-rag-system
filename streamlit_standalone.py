@@ -50,6 +50,9 @@ class Config:
     max_tokens: int = 256
     top_k: int = 3
     temperature: float = 0.7
+    # Игнорируем неизвестные поля
+    def __post_init__(self):
+        pass
 
 class SimpleRAGSystem:
     """Упрощенная RAG система без сложных импортов"""
@@ -73,9 +76,10 @@ class SimpleRAGSystem:
             self.tokenizer = AutoTokenizer.from_pretrained(self.config.generation_model)
             self.generation_model = AutoModelForCausalLM.from_pretrained(
                 self.config.generation_model,
-                torch_dtype=torch.float32,
-                device_map="cpu"
+                torch_dtype=torch.float32
             )
+            # Перемещаем модель на CPU
+            self.generation_model = self.generation_model.to('cpu')
             
             # Добавляем pad_token если его нет
             if self.tokenizer.pad_token is None:
@@ -234,7 +238,15 @@ def load_config():
         if config_path.exists():
             with open(config_path, 'r', encoding='utf-8') as f:
                 config_data = json.load(f)
-            return Config(**config_data)
+            
+            # Фильтруем только известные поля
+            known_fields = {
+                'embedding_model', 'generation_model', 'dataset_path', 
+                'max_tokens', 'top_k', 'temperature'
+            }
+            filtered_data = {k: v for k, v in config_data.items() if k in known_fields}
+            
+            return Config(**filtered_data)
         else:
             return Config()
     except Exception as e:
