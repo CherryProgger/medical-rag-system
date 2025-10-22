@@ -1,0 +1,38 @@
+{
+  "model": {
+    "embedding_model": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+    "generation_model": "microsoft/DialoGPT-medium",
+    "device": "auto",
+    "max_length": 256,
+    "temperature": 0.8,
+    "top_p": 0.9,
+    "do_sample": true
+  },
+  "retrieval": {
+    "top_k": 5,
+    "similarity_threshold": 0.3,
+    "chunk_size": 256,
+    "overlap": 25,
+    "index_type": "faiss"
+  },
+  "data": {
+    "dataset_path": "data/rag_clean_dataset_v2_filtered.json",
+    "excluded_range": [30, 60],
+    "test_size": 0.3,
+    "validation_size": 0.2,
+    "random_seed": 42
+  },
+  "logging": {
+    "level": "DEBUG",
+    "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    "file_path": "logs/rag_system_dev.log",
+    "max_file_size": 5242880,
+    "backup_count": 3
+  },
+  "system": {
+    "debug": true,
+    "parallel_processing": false,
+    "max_workers": 2,
+    "cache_embeddings": false
+  }
+}
