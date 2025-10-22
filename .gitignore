@@ -50,4 +50,5 @@ models/
 
 # Data files (optional - можно включить в репозиторий)
 # data/*.json
-# data/*.docx
+# data/*.docxupload_to_github.py
+.env
