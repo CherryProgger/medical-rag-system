@@ -278,61 +278,71 @@ def load_rag_system():
 # Веб-интерфейс
 def main():
     """Главная функция веб-интерфейса"""
-    st.set_page_config(
-        page_title="Medical RAG System",
-        page_icon="🏥",
-        layout="wide"
-    )
-    
-    st.title("🏥 Medical RAG System")
-    st.markdown("Система ответов на вопросы по медицинской документации")
-    
-    # Загружаем RAG систему
-    with st.spinner("Загружаем систему..."):
-        rag_system = load_rag_system()
-    
-    if rag_system is None:
-        st.error("Не удалось загрузить RAG систему")
-        return
-    
-    st.success("Система готова к работе!")
-    
-    # Форма для ввода вопроса
-    with st.form("question_form"):
-        question = st.text_area(
-            "Введите ваш вопрос:",
-            placeholder="Например: Что такое варикозное расширение вен?",
-            height=100
+    try:
+        st.set_page_config(
+            page_title="Medical RAG System",
+            page_icon="🏥",
+            layout="wide"
         )
-        submit_button = st.form_submit_button("Получить ответ")
-    
-    if submit_button and question:
-        with st.spinner("Обрабатываем ваш вопрос..."):
-            try:
-                response = rag_system.query(question)
-                
-                st.success("Ответ получен!")
-                st.markdown("### Ответ:")
-                st.markdown(f"""
-                <div style='background-color: #f0f2f6; padding: 20px; border-radius: 10px; margin: 10px 0;'>
-                    <p style='color: #2c3e50; font-size: 16px; line-height: 1.6;'>{response.answer}</p>
-                </div>
-                """, unsafe_allow_html=True)
-                
-                if response.sources:
-                    st.markdown("### Источники:")
-                    for i, source in enumerate(response.sources, 1):
-                        st.markdown(f"**{i}.** {source}")
-                        
-            except Exception as e:
-                st.error(f"Ошибка при обработке вопроса: {str(e)}")
-    
-    st.markdown("---")
-    st.markdown("### Примеры вопросов:")
-    st.markdown("- Что такое варикозное расширение вен?")
-    st.markdown("- Как лечить флебиты?")
-    st.markdown("- Что такое тромбоэмболия?")
-    st.markdown("- Какие симптомы ишемического инсульта?")
+        
+        st.title("🏥 Medical RAG System")
+        st.markdown("Система ответов на вопросы по медицинской документации")
+        
+        # Загружаем RAG систему
+        with st.spinner("Загружаем систему..."):
+            rag_system = load_rag_system()
+        
+        if rag_system is None:
+            st.error("Не удалось загрузить RAG систему")
+            return
+        
+        st.success("Система готова к работе!")
+        
+        # Форма для ввода вопроса
+        with st.form("question_form"):
+            question = st.text_area(
+                "Введите ваш вопрос:",
+                placeholder="Например: Что такое варикозное расширение вен?",
+                height=100
+            )
+            submit_button = st.form_submit_button("Получить ответ")
+        
+        if submit_button and question:
+            with st.spinner("Обрабатываем ваш вопрос..."):
+                try:
+                    response = rag_system.query(question)
+                    
+                    st.success("Ответ получен!")
+                    st.markdown("### Ответ:")
+                    
+                    # Безопасное отображение ответа
+                    answer_text = str(response.answer) if response.answer else "Ответ не получен"
+                    st.markdown(f"""
+                    <div style='background-color: #f0f2f6; padding: 20px; border-radius: 10px; margin: 10px 0;'>
+                        <p style='color: #2c3e50; font-size: 16px; line-height: 1.6;'>{answer_text}</p>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+                    if response.sources and len(response.sources) > 0:
+                        st.markdown("### Источники:")
+                        for i, source in enumerate(response.sources, 1):
+                            source_text = str(source) if source else f"Источник {i}"
+                            st.markdown(f"**{i}.** {source_text}")
+                            
+                except Exception as e:
+                    st.error(f"Ошибка при обработке вопроса: {str(e)}")
+        
+        st.markdown("---")
+        st.markdown("### Примеры вопросов:")
+        st.markdown("- Что такое варикозное расширение вен?")
+        st.markdown("- Как лечить флебиты?")
+        st.markdown("- Что такое тромбоэмболия?")
+        st.markdown("- Какие симптомы ишемического инсульта?")
+        
+    except Exception as e:
+        st.error(f"Критическая ошибка приложения: {str(e)}")
+        st.markdown("Попробуйте перезагрузить страницу.")
 
+# Запуск приложения
 if __name__ == "__main__":
     main()
