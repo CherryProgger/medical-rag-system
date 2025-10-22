@@ -105,19 +105,38 @@ class SimpleRAGSystem:
             self.documents = []
             
             # Проверяем структуру данных
-            if isinstance(data, list):
-                for item in data:
-                    if isinstance(item, dict):
-                        doc = Document(
-                            content=item.get('answer', ''),
-                            metadata={'question': item.get('question', '')}
-                        )
-                        self.documents.append(doc)
+            if isinstance(data, dict):
+                # Если это словарь, ищем ключ 'data' или 'questions'
+                if 'data' in data:
+                    items = data['data']
+                elif 'questions' in data:
+                    items = data['questions']
+                else:
+                    # Если нет стандартных ключей, берем все значения
+                    items = list(data.values())
+                    # Фильтруем только списки
+                    items = [item for item in items if isinstance(item, list)]
+                    if items:
+                        items = items[0]  # Берем первый список
                     else:
-                        logger.warning(f"Неожиданный тип элемента: {type(item)}")
+                        logger.error("Не найдены данные в словаре")
+                        return False
+            elif isinstance(data, list):
+                items = data
             else:
                 logger.error(f"Неожиданная структура данных: {type(data)}")
                 return False
+            
+            # Обрабатываем элементы
+            for item in items:
+                if isinstance(item, dict):
+                    doc = Document(
+                        content=item.get('answer', ''),
+                        metadata={'question': item.get('question', '')}
+                    )
+                    self.documents.append(doc)
+                else:
+                    logger.warning(f"Неожиданный тип элемента: {type(item)}")
             
             logger.info(f"Загружено {len(self.documents)} документов")
             return True
