@@ -103,11 +103,18 @@ class SimpleRAGSystem:
                 data = json.load(f)
             
             self.documents = []
+            self.source_files = []
+            
+            # Получаем список файлов-источников
+            if isinstance(data, dict) and 'dataset_info' in data:
+                self.source_files = data['dataset_info'].get('sources', [])
             
             # Проверяем структуру данных
             if isinstance(data, dict):
-                # Если это словарь, ищем ключ 'data' или 'questions'
-                if 'data' in data:
+                # Если это словарь, ищем ключ 'data' или 'questions' или 'pairs'
+                if 'pairs' in data:
+                    items = data['pairs']
+                elif 'data' in data:
                     items = data['data']
                 elif 'questions' in data:
                     items = data['questions']
@@ -130,19 +137,46 @@ class SimpleRAGSystem:
             # Обрабатываем элементы
             for item in items:
                 if isinstance(item, dict):
+                    # Определяем источник на основе ID или содержимого
+                    source_file = self._determine_source_file(item)
+                    
                     doc = Document(
                         content=item.get('answer', ''),
-                        metadata={'question': item.get('question', '')}
+                        metadata={
+                            'question': item.get('question', ''),
+                            'source_file': source_file,
+                            'id': item.get('id', '')
+                        }
                     )
                     self.documents.append(doc)
                 else:
                     logger.warning(f"Неожиданный тип элемента: {type(item)}")
             
             logger.info(f"Загружено {len(self.documents)} документов")
+            logger.info(f"Источники: {self.source_files}")
             return True
         except Exception as e:
             logger.error(f"Ошибка загрузки данных: {e}")
             return False
+    
+    def _determine_source_file(self, item):
+        """Определяет файл-источник для элемента"""
+        # Если есть ID, пытаемся определить по префиксу
+        item_id = item.get('id', '')
+        
+        if item_id.startswith('vbnk_'):
+            return "Варикозное расширение вен нижних конечностей.docx"
+        elif item_id.startswith('dt_'):
+            return "Диагностика, лечение и профилактика венозных тромбоэмболических осложнений в травматологии и ортопедии.docx"
+        elif item_id.startswith('ft_'):
+            return "Флебит и тромбофлебит поверхностных сосудов.docx"
+        elif item_id.startswith('ai_'):
+            return "Ишемический инсульт и транзиторная ишемическая атака I65_0.docx"
+        elif item_id.startswith('aa_'):
+            return "Аневризмы грудной и торакоабдоминальной аорты I71.docx"
+        else:
+            # Возвращаем первый доступный файл как fallback
+            return self.source_files[0] if self.source_files else "Медицинская документация"
     
     def create_embeddings(self):
         """Создает эмбеддинги для документов"""
@@ -332,10 +366,12 @@ def main():
                     """, unsafe_allow_html=True)
                     
                     if response.sources and len(response.sources) > 0:
-                        st.markdown("### Источники:")
+                        st.markdown("### 📁 Источники:")
                         for i, source in enumerate(response.sources, 1):
                             source_text = str(source) if source else f"Источник {i}"
-                            st.markdown(f"**{i}.** {source_text}")
+                            # Убираем расширение .docx для красоты
+                            clean_source = source_text.replace('.docx', '')
+                            st.markdown(f"**{i}.** 📄 {clean_source}")
                             
                 except Exception as e:
                     st.error(f"Ошибка при обработке вопроса: {str(e)}")
