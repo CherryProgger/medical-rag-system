@@ -323,11 +323,11 @@ def main():
                     st.success("Ответ получен!")
                     st.markdown("### Ответ:")
                     
-                    # Безопасное отображение ответа
+                    # Безопасное отображение ответа с правильными цветами
                     answer_text = str(response.answer) if response.answer else "Ответ не получен"
                     st.markdown(f"""
-                    <div style='background-color: #f0f2f6; padding: 20px; border-radius: 10px; margin: 10px 0;'>
-                        <p style='color: #2c3e50; font-size: 16px; line-height: 1.6;'>{answer_text}</p>
+                    <div style='background-color: #2c3e50; padding: 20px; border-radius: 10px; margin: 10px 0; border: 2px solid #3498db;'>
+                        <p style='color: #ecf0f1; font-size: 16px; line-height: 1.6; font-weight: 400;'>{answer_text}</p>
                     </div>
                     """, unsafe_allow_html=True)
                     
