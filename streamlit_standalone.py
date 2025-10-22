@@ -221,15 +221,26 @@ class SimpleRAGSystem:
     def generate_answer(self, query: str, context_docs: List[Document]) -> str:
         """Генерирует ответ на основе контекста"""
         try:
-            # Простой fallback - возвращаем найденный документ
             if context_docs:
-                # Берем первый найденный документ и форматируем как ответ
+                # Объединяем несколько документов для более полного ответа
+                answer_parts = []
+                
+                # Добавляем основной ответ из первого документа
                 best_doc = context_docs[0]
-                answer = f"На основе медицинской документации:\n\n{best_doc.content}"
+                answer_parts.append(f"**Ответ:** {best_doc.content}")
+                
+                # Если есть дополнительные документы, добавляем их
+                if len(context_docs) > 1:
+                    answer_parts.append("\n**Дополнительная информация:**")
+                    for i, doc in enumerate(context_docs[1:3], 1):  # Максимум 2 дополнительных
+                        if doc.content and doc.content != best_doc.content:
+                            answer_parts.append(f"\n• {doc.content}")
+                
+                answer = "\n".join(answer_parts)
                 
                 # Ограничиваем длину
-                if len(answer) > 800:
-                    answer = answer[:800] + "..."
+                if len(answer) > 1000:
+                    answer = answer[:1000] + "..."
                 
                 return answer
             else:
@@ -255,8 +266,13 @@ class SimpleRAGSystem:
             # Генерируем ответ
             answer = self.generate_answer(question, similar_docs)
             
-            # Формируем источники
-            sources = [doc.metadata.get('question', 'Неизвестный источник') for doc in similar_docs]
+            # Формируем источники - используем названия файлов вместо вопросов
+            sources = []
+            for doc in similar_docs:
+                source_file = doc.metadata.get('source_file', 'Медицинская документация')
+                # Убираем расширение .docx для красоты
+                clean_source = source_file.replace('.docx', '')
+                sources.append(clean_source)
             
             return Response(
                 answer=answer,
