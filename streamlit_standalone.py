@@ -103,12 +103,21 @@ class SimpleRAGSystem:
                 data = json.load(f)
             
             self.documents = []
-            for item in data:
-                doc = Document(
-                    content=item.get('answer', ''),
-                    metadata={'question': item.get('question', '')}
-                )
-                self.documents.append(doc)
+            
+            # Проверяем структуру данных
+            if isinstance(data, list):
+                for item in data:
+                    if isinstance(item, dict):
+                        doc = Document(
+                            content=item.get('answer', ''),
+                            metadata={'question': item.get('question', '')}
+                        )
+                        self.documents.append(doc)
+                    else:
+                        logger.warning(f"Неожиданный тип элемента: {type(item)}")
+            else:
+                logger.error(f"Неожиданная структура данных: {type(data)}")
+                return False
             
             logger.info(f"Загружено {len(self.documents)} документов")
             return True
