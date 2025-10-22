@@ -45,9 +45,9 @@ class Response:
 class Config:
     """Конфигурация системы"""
     embedding_model: str = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
-    generation_model: str = "microsoft/DialoGPT-medium"
+    generation_model: str = "microsoft/DialoGPT-small"  # Более легкая модель
     dataset_path: str = "data/rag_clean_dataset_v2_filtered.json"
-    max_tokens: int = 256
+    max_tokens: int = 128  # Меньше токенов
     top_k: int = 3
     temperature: float = 0.7
     # Игнорируем неизвестные поля
@@ -171,16 +171,25 @@ class SimpleRAGSystem:
             if not self.generation_model or not self.tokenizer:
                 return "Модель генерации не загружена"
             
-            # Создаем контекст из найденных документов
-            context = "\n".join([doc.content for doc in context_docs[:2]])
+            # Создаем контекст из найденных документов (ограничиваем длину)
+            context_parts = []
+            total_length = 0
+            for doc in context_docs[:2]:
+                if total_length + len(doc.content) < 500:  # Ограничиваем контекст
+                    context_parts.append(doc.content)
+                    total_length += len(doc.content)
+                else:
+                    break
+            
+            context = "\n".join(context_parts)
             
             # Формируем промпт
-            prompt = f"Контекст: {context}\n\nВопрос: {query}\n\nОтвет:"
+            prompt = f"Вопрос: {query}\nКонтекст: {context}\nОтвет:"
             
-            # Токенизируем
-            inputs = self.tokenizer.encode(prompt, return_tensors="pt", max_length=512, truncation=True)
+            # Токенизируем с ограничением
+            inputs = self.tokenizer.encode(prompt, return_tensors="pt", max_length=256, truncation=True)
             
-            # Генерируем ответ
+            # Генерируем ответ с ограничениями
             with torch.no_grad():
                 outputs = self.generation_model.generate(
                     inputs,
@@ -188,7 +197,9 @@ class SimpleRAGSystem:
                     temperature=self.config.temperature,
                     do_sample=True,
                     pad_token_id=self.tokenizer.eos_token_id,
-                    eos_token_id=self.tokenizer.eos_token_id
+                    eos_token_id=self.tokenizer.eos_token_id,
+                    no_repeat_ngram_size=2,  # Избегаем повторений
+                    early_stopping=True
                 )
             
             # Декодируем ответ
@@ -200,11 +211,18 @@ class SimpleRAGSystem:
             else:
                 answer = response[len(prompt):].strip()
             
+            # Ограничиваем длину ответа
+            if len(answer) > 500:
+                answer = answer[:500] + "..."
+            
             return answer if answer else "Не удалось сгенерировать ответ"
             
         except Exception as e:
             logger.error(f"Ошибка генерации: {e}")
-            return f"Ошибка генерации ответа: {str(e)}"
+            # Fallback - возвращаем первый найденный документ
+            if context_docs:
+                return context_docs[0].content[:300] + "..."
+            return "Не удалось сгенерировать ответ"
     
     def query(self, question: str) -> Response:
         """Обрабатывает запрос пользователя"""
