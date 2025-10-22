@@ -187,61 +187,23 @@ class SimpleRAGSystem:
     def generate_answer(self, query: str, context_docs: List[Document]) -> str:
         """Генерирует ответ на основе контекста"""
         try:
-            if not self.generation_model or not self.tokenizer:
-                return "Модель генерации не загружена"
-            
-            # Создаем контекст из найденных документов (ограничиваем длину)
-            context_parts = []
-            total_length = 0
-            for doc in context_docs[:2]:
-                if total_length + len(doc.content) < 500:  # Ограничиваем контекст
-                    context_parts.append(doc.content)
-                    total_length += len(doc.content)
-                else:
-                    break
-            
-            context = "\n".join(context_parts)
-            
-            # Формируем промпт
-            prompt = f"Вопрос: {query}\nКонтекст: {context}\nОтвет:"
-            
-            # Токенизируем с ограничением
-            inputs = self.tokenizer.encode(prompt, return_tensors="pt", max_length=256, truncation=True)
-            
-            # Генерируем ответ с ограничениями
-            with torch.no_grad():
-                outputs = self.generation_model.generate(
-                    inputs,
-                    max_new_tokens=self.config.max_tokens,
-                    temperature=self.config.temperature,
-                    do_sample=True,
-                    pad_token_id=self.tokenizer.eos_token_id,
-                    eos_token_id=self.tokenizer.eos_token_id,
-                    no_repeat_ngram_size=2,  # Избегаем повторений
-                    early_stopping=True
-                )
-            
-            # Декодируем ответ
-            response = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
-            
-            # Извлекаем только ответ (после "Ответ:")
-            if "Ответ:" in response:
-                answer = response.split("Ответ:")[-1].strip()
+            # Простой fallback - возвращаем найденный документ
+            if context_docs:
+                # Берем первый найденный документ и форматируем как ответ
+                best_doc = context_docs[0]
+                answer = f"На основе медицинской документации:\n\n{best_doc.content}"
+                
+                # Ограничиваем длину
+                if len(answer) > 800:
+                    answer = answer[:800] + "..."
+                
+                return answer
             else:
-                answer = response[len(prompt):].strip()
-            
-            # Ограничиваем длину ответа
-            if len(answer) > 500:
-                answer = answer[:500] + "..."
-            
-            return answer if answer else "Не удалось сгенерировать ответ"
+                return "К сожалению, не удалось найти релевантную информацию для ответа на ваш вопрос."
             
         except Exception as e:
             logger.error(f"Ошибка генерации: {e}")
-            # Fallback - возвращаем первый найденный документ
-            if context_docs:
-                return context_docs[0].content[:300] + "..."
-            return "Не удалось сгенерировать ответ"
+            return "Произошла ошибка при генерации ответа. Попробуйте переформулировать вопрос."
     
     def query(self, question: str) -> Response:
         """Обрабатывает запрос пользователя"""
