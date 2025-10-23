@@ -211,7 +211,7 @@ class GenerationService:
         return answer
     
     def generate_response(self, query: Query, relevant_documents: List[Document], 
-                         processing_time: float) -> Response:
+                         processing_time: float, num_documents_searched: int = 0) -> Response:
         """
         Генерирует полный ответ с метаданными
         
@@ -229,7 +229,7 @@ class GenerationService:
         # Создаем метаданные
         metadata = ResponseMetadata(
             processing_time=processing_time,
-            num_documents_searched=len(self._get_all_documents()) if hasattr(self, '_get_all_documents') else 0,
+            num_documents_searched=num_documents_searched,
             num_documents_found=len(relevant_documents),
             best_similarity_score=max([doc.similarity_score or 0 for doc in relevant_documents]) if relevant_documents else 0.0,
             confidence_level=self._get_confidence_level(relevant_documents),

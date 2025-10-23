@@ -11,7 +11,7 @@ import json
 from ..models.config import Config
 from ..models.document import Document
 from ..models.query import Query
-from ..models.response import Response
+from ..models.response import Response, ResponseMetadata
 from .embedding_service import EmbeddingService
 from .retrieval_service import RetrievalService
 from .generation_service import GenerationService
@@ -46,13 +46,18 @@ class MedicalRAGSystem:
     
     def _setup_logging(self):
         """Настраивает логирование"""
+        handlers = [logging.StreamHandler()]
+        if self.config.logging.file_path:
+            try:
+                file_path = Path(self.config.logging.file_path)
+                file_path.parent.mkdir(parents=True, exist_ok=True)
+                handlers.append(logging.FileHandler(file_path))
+            except Exception:
+                handlers.append(logging.FileHandler(self.config.logs_dir / "rag_system.log"))
         logging.basicConfig(
             level=getattr(logging, self.config.logging.level),
             format=self.config.logging.format,
-            handlers=[
-                logging.StreamHandler(),
-                logging.FileHandler(self.config.logs_dir / "rag_system.log") if self.config.logging.file_path else logging.NullHandler()
-            ]
+            handlers=handlers
         )
     
     def initialize(self, dataset_path: Optional[str] = None) -> None:
@@ -174,7 +179,14 @@ class MedicalRAGSystem:
             # Генерация ответа
             processing_time = time.time() - start_time
             response = self.generation_service.generate_response(
-                query, relevant_documents, processing_time
+                query,
+                relevant_documents,
+                processing_time,
+                num_documents_searched=(
+                    self.retrieval_service.index.ntotal
+                    if self.retrieval_service and self.retrieval_service.index
+                    else len(self.retrieval_service.documents) if self.retrieval_service else 0
+                ),
             )
             
             logger.info(f"Обработан запрос: '{question_text[:50]}...' за {processing_time:.2f}с")

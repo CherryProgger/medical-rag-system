@@ -251,12 +251,12 @@ def show_system_info():
     print("  • examples/ - Примеры использования")
     print()
     print("🚀 Режимы запуска:")
-    print("  • python main_new.py --web - Веб-интерфейс")
-    print("  • python main_new.py --cli - Командная строка")
-    print("  • python main_new.py --eval - Оценка системы")
-    print("  • python main_new.py --preprocess - Предобработка данных")
-    print("  • python main_new.py --test - Запуск тестов")
-    print("  • python main_new.py --info - Информация о системе")
+    print("  • python main.py --web - Веб-интерфейс")
+    print("  • python main.py --cli - Командная строка")
+    print("  • python main.py --eval - Оценка системы")
+    print("  • python main.py --preprocess - Предобработка данных")
+    print("  • python main.py --test - Запуск тестов")
+    print("  • python main.py --info - Информация о системе")
 
 
 def main():

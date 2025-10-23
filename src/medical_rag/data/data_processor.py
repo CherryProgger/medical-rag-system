@@ -134,7 +134,7 @@ class DataProcessor:
         
         if not output_path:
             base_name = Path(self.config.data.dataset_path).stem
-            output_path = f"{base_name}_filtered.json"
+            output_path = str(self.config.data_dir / f"{base_name}_filtered.json")
         
         with open(output_path, 'w', encoding='utf-8') as f:
             json.dump(self.processed_data, f, ensure_ascii=False, indent=2)
