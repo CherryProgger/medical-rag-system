@@ -36,11 +36,11 @@ ENV/
 Thumbs.db
 
 # Logs
-logs/
+/logs/
 *.log
 
 # Cache
-cache/
+/cache/
 __pycache__/
 
 # Models (too large for git)
