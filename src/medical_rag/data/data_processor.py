@@ -10,6 +10,7 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 
 from ..models.config import Config
+from ..models.document import Document, DocumentMetadata
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +28,7 @@ class DataProcessor:
         self.config = config
         self.raw_data = None
         self.processed_data = None
+        self.corpus_entries = None
         
     def load_raw_dataset(self, dataset_path: str) -> Dict[str, Any]:
         """
@@ -165,6 +167,114 @@ class DataProcessor:
         except Exception as e:
             logger.error(f"Ошибка загрузки обработанного датасета: {e}")
             raise
+    
+    def load_corpus_entries(self, corpus_path: str = None) -> List[Dict[str, Any]]:
+        """
+        Загружает корпуса из JSONL файла.
+        """
+        if corpus_path is None:
+            corpus_path = self.config.data.corpus_path
+        
+        corpus_path_obj = Path(corpus_path)
+        if not corpus_path_obj.exists():
+            raise FileNotFoundError(f"Корпус не найден: {corpus_path}")
+        
+        entries: List[Dict[str, Any]] = []
+        try:
+            with corpus_path_obj.open("r", encoding="utf-8") as file:
+                for line in file:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    entries.append(json.loads(line))
+        except Exception as exc:  # pylint: disable=broad-except
+            logger.error("Ошибка загрузки корпуса %s: %s", corpus_path, exc)
+            raise
+        
+        logger.info("Загружен корпус: %s записей", len(entries))
+        self.corpus_entries = entries
+        return entries
+    
+    def create_documents_from_corpus(self, corpus_entries: List[Dict[str, Any]]) -> List[Document]:
+        """
+        Преобразует элементы корпуса в документы.
+        """
+        documents: List[Document] = []
+        for entry in corpus_entries:
+            metadata_dict = entry.get("metadata", {})
+            metadata = DocumentMetadata(
+                category=metadata_dict.get("category", ""),
+                difficulty=metadata_dict.get("difficulty", ""),
+                topic=metadata_dict.get("topic", ""),
+                source_file=metadata_dict.get("source_file", ""),
+                section=metadata_dict.get("section_title") or metadata_dict.get("section"),
+                confidence=metadata_dict.get("confidence", "medium"),
+                extra={k: v for k, v in metadata_dict.items() if k not in {"category", "difficulty", "topic", "source_file", "section_title", "section", "confidence"}}
+            )
+            chunk_text = entry.get("text", "")
+            if not chunk_text:
+                continue
+            document = Document(
+                id=entry["id"],
+                content=chunk_text,
+                question=metadata.section or entry["id"],
+                answer=chunk_text,
+                metadata=metadata
+            )
+            documents.append(document)
+        
+        logger.info("Создано %s документов из корпуса", len(documents))
+        return documents
+
+    def create_documents_from_pairs(self, data: Dict[str, Any]) -> List[Document]:
+        """
+        Преобразует пары вопрос-ответ в документы.
+        """
+        documents: List[Document] = []
+        for pair in data.get("pairs", []):
+            try:
+                metadata_dict = pair.get("metadata", {})
+                source = pair.get("source", {})
+                metadata = DocumentMetadata(
+                    category=metadata_dict.get("category", ""),
+                    difficulty=metadata_dict.get("difficulty", ""),
+                    topic=metadata_dict.get("topic", ""),
+                    source_file=source.get("file", ""),
+                    section=source.get("section"),
+                    confidence=source.get("confidence", "high"),
+                    extra={"pair_id": pair.get("id")}
+                )
+                document = Document(
+                    id=pair["id"],
+                    content=f"Вопрос: {pair['question']}\nОтвет: {pair['answer']}",
+                    question=pair['question'],
+                    answer=pair['answer'],
+                    metadata=metadata
+                )
+                documents.append(document)
+            except Exception as exc:  # pylint: disable=broad-except
+                logger.warning("Ошибка создания документа %s: %s", pair.get("id", "unknown"), exc)
+        return documents
+    
+    def get_documents(self) -> List[Document]:
+        """
+        Возвращает список документов для индексации, используя корпус или обработанный датасет.
+        """
+        documents: List[Document] = []
+        if self.config.data.use_corpus:
+            try:
+                entries = self.corpus_entries or self.load_corpus_entries(self.config.data.corpus_path)
+                documents = self.create_documents_from_corpus(entries)
+            except FileNotFoundError:
+                logger.warning("Файл корпуса не найден (%s), используем обработанный датасет", self.config.data.corpus_path)
+            except Exception as exc:  # pylint: disable=broad-except
+                logger.error("Не удалось загрузить корпус: %s", exc)
+        
+        if not documents:
+            processed_data = self.processed_data or self.load_processed_dataset(self.config.data.dataset_path)
+            documents = self.create_documents_from_pairs(processed_data)
+        
+        return documents
     
     def get_statistics(self) -> Dict[str, Any]:
         """

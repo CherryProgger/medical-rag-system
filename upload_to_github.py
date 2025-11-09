@@ -42,19 +42,19 @@ def upload_file(file_path, content):
     try:
         response = requests.put(url, headers=headers, json=data)
         if response.status_code in [200, 201]:
-            print(f"✅ {file_path} - загружен")
+            print(f"[OK] {file_path} - загружен")
             return True
         else:
-            print(f"❌ {file_path} - ошибка: {response.status_code}")
+            print(f"[ERROR] {file_path} - ошибка: {response.status_code}")
             print(f"   {response.text}")
             return False
     except Exception as e:
-        print(f"❌ {file_path} - исключение: {e}")
+        print(f"[ERROR] {file_path} - исключение: {e}")
         return False
 
 def main():
     """Основная функция"""
-    print("🚀 Загружаем файлы на GitHub...")
+    print("Начинаем загрузку файлов на GitHub...")
     
     project_root = Path(".")
     uploaded_count = 0
@@ -69,7 +69,7 @@ def main():
                 files_to_upload.append(relative_path)
     
     total_files = len(files_to_upload)
-    print(f"📁 Найдено {total_files} файлов для загрузки")
+    print(f"Найдено {total_files} файлов для загрузки")
     
     # Загружаем файлы
     for file_path in files_to_upload:
@@ -81,13 +81,13 @@ def main():
                 uploaded_count += 1
                 
         except Exception as e:
-            print(f"❌ Ошибка чтения {file_path}: {e}")
+            print(f"[ERROR] Ошибка чтения {file_path}: {e}")
     
-    print(f"\n🎉 Загружено {uploaded_count} из {total_files} файлов")
+    print(f"\nЗагружено {uploaded_count} из {total_files} файлов")
     
     if uploaded_count > 0:
-        print(f"🌐 Репозиторий: https://github.com/{REPO_OWNER}/{REPO_NAME}")
-        print("🚀 Теперь можно развернуть на Streamlit Cloud!")
+        print(f"Репозиторий: https://github.com/{REPO_OWNER}/{REPO_NAME}")
+        print("Теперь можно развернуть на Streamlit Cloud!")
 
 if __name__ == "__main__":
     main()

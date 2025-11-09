@@ -11,18 +11,18 @@ from pathlib import Path
 
 def run_command(command, description):
     """Выполняет команду и выводит результат"""
-    print(f"🔄 {description}...")
+    print(f"[INFO] {description}...")
     try:
         result = subprocess.run(command, shell=True, capture_output=True, text=True)
         if result.returncode == 0:
-            print(f"✅ {description} - успешно")
+            print(f"[OK] {description} выполнено")
             return True
         else:
-            print(f"❌ {description} - ошибка:")
+            print(f"[ERROR] {description}:")
             print(result.stderr)
             return False
     except Exception as e:
-        print(f"❌ {description} - исключение: {e}")
+        print(f"[ERROR] {description} - исключение: {e}")
         return False
 
 
@@ -47,17 +47,17 @@ def create_directories():
         "config"
     ]
     
-    print("📁 Создание директорий...")
+    print("Создание директорий...")
     for directory in directories:
         Path(directory).mkdir(parents=True, exist_ok=True)
-        print(f"  ✅ {directory}")
+        print(f"  - {directory}")
     
-    print("✅ Все директории созданы")
+    print("Все директории созданы")
 
 
 def install_dependencies():
     """Устанавливает зависимости"""
-    print("📦 Установка зависимостей...")
+    print("Установка зависимостей...")
     
     # Основные зависимости
     if not run_command("pip install -r requirements.txt", "Установка основных зависимостей"):

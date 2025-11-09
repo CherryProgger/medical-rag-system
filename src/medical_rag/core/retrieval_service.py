@@ -2,10 +2,13 @@
 Сервис для поиска релевантных документов
 """
 
-import numpy as np
-import faiss
-from typing import List, Optional, Tuple
 import logging
+from typing import List, Optional, Tuple
+
+import faiss
+import numpy as np
+
+from ..cache.embedding_cache import EmbeddingCache
 from ..models.config import Config
 from ..models.document import Document
 from ..models.query import Query
@@ -29,7 +32,13 @@ class RetrievalService:
         self.embedding_service = embedding_service
         self.index = None
         self.documents = []
+        self.embedding_cache: Optional[EmbeddingCache] = None
         self._initialize_index()
+        if self.config.cache_embeddings:
+            try:
+                self.embedding_cache = EmbeddingCache(self.config.embeddings_cache_path)
+            except Exception as exc:  # pylint: disable=broad-except
+                logger.warning("Не удалось инициализировать кэш эмбеддингов: %s", exc)
     
     def _initialize_index(self):
         """Инициализирует FAISS индекс"""
@@ -57,39 +66,50 @@ class RetrievalService:
             return
         
         try:
-            # Создаем эмбеддинги для документов
-            documents_with_embeddings = self.embedding_service.create_document_embeddings(documents)
-            
-            # Извлекаем эмбеддинги
-            embeddings = []
-            for doc in documents_with_embeddings:
-                if doc.embedding is not None:
-                    embeddings.append(doc.embedding)
-                else:
-                    logger.warning(f"Документ {doc.id} не имеет эмбеддинга")
-                    continue
-            
+            prepared_documents = self._ensure_document_embeddings(documents)
+            embeddings = [doc.embedding for doc in prepared_documents if doc.embedding is not None]
             if not embeddings:
                 logger.warning("Нет валидных эмбеддингов для добавления")
                 return
             
-            # Преобразуем в numpy массив
             embeddings_array = np.array(embeddings, dtype=np.float32)
-            
-            # Нормализуем для косинусного сходства
             embeddings_normalized = self.embedding_service.normalize_embeddings(embeddings_array)
-            
-            # Добавляем в индекс
             self.index.add(embeddings_normalized)
-            
-            # Сохраняем документы
-            self.documents.extend(documents_with_embeddings)
-            
+            self.documents.extend(prepared_documents)
             logger.info(f"Добавлено {len(embeddings)} документов в индекс")
             
         except Exception as e:
             logger.error(f"Ошибка добавления документов: {e}")
             raise
+    
+    def _ensure_document_embeddings(self, documents: List[Document]) -> List[Document]:
+        """
+        Гарантирует наличие эмбеддингов у документов (использует кэш при необходимости).
+        """
+        documents_to_encode: List[Document] = []
+        cache_keys: List[Optional[str]] = []
+        
+        for doc in documents:
+            cache_key = doc.get_cache_key()
+            cached_embedding = None
+            if cache_key and self.embedding_cache:
+                cached_embedding = self.embedding_cache.get(cache_key)
+                if cached_embedding is not None:
+                    doc.embedding = cached_embedding
+            if doc.embedding is None:
+                documents_to_encode.append(doc)
+                cache_keys.append(cache_key)
+        
+        if documents_to_encode:
+            texts = [doc.content for doc in documents_to_encode]
+            new_embeddings = self.embedding_service.create_embeddings(texts)
+            for doc, embedding, cache_key in zip(documents_to_encode, new_embeddings, cache_keys):
+                embedding_list = embedding.astype(np.float32).tolist()
+                doc.embedding = embedding_list
+                if cache_key and self.embedding_cache:
+                    self.embedding_cache.set(cache_key, embedding_list)
+        
+        return documents
     
     def search(self, query: Query) -> List[Document]:
         """

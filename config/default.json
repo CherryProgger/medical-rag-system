@@ -16,11 +16,14 @@
     "index_type": "faiss"
   },
   "data": {
-    "dataset_path": "rag_clean_dataset_v2_filtered.json",
+    "dataset_path": "data/rag_clean_dataset_v2_filtered.json",
+    "corpus_path": "data/corpus.jsonl",
+    "processed_docs_dir": "data/processed_docs",
     "excluded_range": [30, 60],
     "test_size": 0.2,
     "validation_size": 0.1,
-    "random_seed": 42
+    "random_seed": 42,
+    "use_corpus": true
   },
   "logging": {
     "level": "INFO",
@@ -33,6 +36,8 @@
     "debug": false,
     "parallel_processing": true,
     "max_workers": 4,
-    "cache_embeddings": true
+    "cache_embeddings": true,
+    "vector_index_path": "cache/vector_index.faiss",
+    "embeddings_cache_path": "cache/embeddings.sqlite3"
   }
 }

@@ -17,10 +17,13 @@
   },
   "data": {
     "dataset_path": "data/rag_clean_dataset_v2_filtered.json",
+    "corpus_path": "data/corpus.jsonl",
+    "processed_docs_dir": "data/processed_docs",
     "excluded_range": [30, 60],
     "test_size": 0.3,
     "validation_size": 0.2,
-    "random_seed": 42
+    "random_seed": 42,
+    "use_corpus": true
   },
   "logging": {
     "level": "DEBUG",
@@ -33,6 +36,8 @@
     "debug": true,
     "parallel_processing": false,
     "max_workers": 2,
-    "cache_embeddings": false
+    "cache_embeddings": true,
+    "vector_index_path": "cache/vector_index_dev.faiss",
+    "embeddings_cache_path": "cache/embeddings_dev.sqlite3"
   }
 }

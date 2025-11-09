@@ -108,50 +108,21 @@ class MedicalRAGSystem:
         """Загружает и обрабатывает данные"""
         logger.info("Загрузка и обработка данных...")
         
-        # Загружаем обработанные данные
-        processed_data = self.data_processor.load_processed_dataset()
+        documents: List[Document] = self.data_processor.get_documents()
         
-        # Преобразуем в документы
-        documents = self._create_documents_from_data(processed_data)
+        if not documents:
+            raise ValueError("Не удалось загрузить ни одного документа для индексации")
         
-        # Добавляем документы в индекс
+        self.retrieval_service.clear_index()
         self.retrieval_service.add_documents(documents)
         
-        logger.info(f"Загружено {len(documents)} документов")
-    
-    def _create_documents_from_data(self, data: Dict[str, Any]) -> List[Document]:
-        """Создает документы из данных"""
-        documents = []
-        
-        for pair in data.get('pairs', []):
+        if self.config.vector_index_path:
             try:
-                # Создаем метаданные
-                from ..models.document import DocumentMetadata
-                metadata = DocumentMetadata(
-                    category=pair.get('metadata', {}).get('category', ''),
-                    difficulty=pair.get('metadata', {}).get('difficulty', ''),
-                    topic=pair.get('metadata', {}).get('topic', ''),
-                    source_file=pair.get('source', {}).get('file', ''),
-                    section=pair.get('source', {}).get('section'),
-                    confidence=pair.get('source', {}).get('confidence', 'high')
-                )
-                
-                # Создаем документ
-                document = Document(
-                    id=pair['id'],
-                    content=f"Вопрос: {pair['question']}\nОтвет: {pair['answer']}",
-                    question=pair['question'],
-                    answer=pair['answer'],
-                    metadata=metadata
-                )
-                
-                documents.append(document)
-                
-            except Exception as e:
-                logger.warning(f"Ошибка создания документа {pair.get('id', 'unknown')}: {e}")
-                continue
+                self.retrieval_service.save_index(str(self.config.vector_index_path))
+            except Exception as exc:  # pylint: disable=broad-except
+                logger.warning("Не удалось сохранить индекс: %s", exc)
         
-        return documents
+        logger.info("Загружено %s документов", len(documents))
     
     def answer_question(self, question_text: str, **kwargs) -> Response:
         """

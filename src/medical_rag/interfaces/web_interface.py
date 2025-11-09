@@ -20,7 +20,6 @@ def create_web_app():
     # Настройка страницы
     st.set_page_config(
         page_title="Медицинская RAG система",
-        page_icon="🏥",
         layout="wide",
         initial_sidebar_state="expanded"
     )
@@ -107,7 +106,7 @@ def create_web_app():
     
     def display_sidebar():
         """Отображает боковую панель с информацией"""
-        st.sidebar.title("🏥 Медицинская RAG система")
+        st.sidebar.title("Медицинская RAG система")
         
         st.sidebar.markdown("### О системе")
         st.sidebar.info("""
@@ -134,7 +133,7 @@ def create_web_app():
     
     def display_main_interface(rag_system, top_k):
         """Отображает основной интерфейс"""
-        st.markdown('<h1 class="main-header">🏥 Медицинская RAG система</h1>', unsafe_allow_html=True)
+        st.markdown('<h1 class="main-header">Медицинская RAG система</h1>', unsafe_allow_html=True)
         
         st.markdown("""
         ### Задайте вопрос по медицинской документации
@@ -156,7 +155,7 @@ def create_web_app():
         # Кнопка поиска
         col1, col2, col3 = st.columns([1, 2, 1])
         with col2:
-            search_button = st.button("🔍 Найти ответ", type="primary", use_container_width=True)
+            search_button = st.button("Найти ответ", type="primary", use_container_width=True)
         
         # Обработка запроса
         if search_button and question:
@@ -164,7 +163,7 @@ def create_web_app():
                 response = rag_system.answer_question(question, max_results=top_k)
             
             # Отображение результата
-            st.markdown("### 📋 Ответ")
+            st.markdown("### Ответ")
             
             # Форматируем ответ для лучшей читаемости
             formatted_answer = response.answer.replace('\n', '<br>')
@@ -184,7 +183,7 @@ def create_web_app():
             
             # Источники
             if response.relevant_documents:
-                st.markdown("### 📚 Источники")
+                st.markdown("### Источники")
                 for i, doc in enumerate(response.relevant_documents, 1):
                     with st.expander(f"Источник {i} (релевантность: {doc.similarity_score:.3f})"):
                         st.markdown(f"**Вопрос:** {doc.question}")
@@ -201,13 +200,13 @@ def create_web_app():
             
             # Предупреждения
             if response.warnings:
-                st.markdown("### ⚠️ Предупреждения")
+                st.markdown("### Предупреждения")
                 for warning in response.warnings:
                     st.warning(warning)
     
     def display_example_questions():
         """Отображает примеры вопросов"""
-        st.markdown("### 💡 Примеры вопросов")
+        st.markdown("### Примеры вопросов")
         
         example_questions = [
             "Что такое варикозное расширение вен нижних конечностей?",
@@ -250,7 +249,7 @@ def create_web_app():
         st.markdown("---")
         st.markdown("""
         <div style="text-align: center; color: #666; font-size: 0.9rem;">
-            Медицинская RAG система | Профессиональная версия | 
+            Медицинская RAG система |
             <a href="https://github.com" target="_blank">GitHub</a>
         </div>
         """, unsafe_allow_html=True)

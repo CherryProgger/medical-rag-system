@@ -1,6 +1,6 @@
 """
 Главный файл для запуска медицинской RAG системы
-Профессиональная версия с ООП архитектурой
+с модульной архитектурой
 """
 
 import argparse
@@ -50,11 +50,11 @@ def check_dependencies():
             missing_packages.append(package_name)
     
     if missing_packages:
-        print(f"❌ Отсутствуют пакеты: {missing_packages}")
+        print(f"[ERROR] Отсутствуют пакеты: {missing_packages}")
         print("Установите зависимости: pip install -r requirements.txt")
         return False
     
-    print("✅ Все зависимости установлены")
+    print("[OK] Все зависимости установлены")
     return True
 
 
@@ -70,11 +70,11 @@ def check_data_files():
             missing_files.append(file)
     
     if missing_files:
-        print(f"❌ Отсутствуют файлы: {missing_files}")
+        print(f"[ERROR] Отсутствуют файлы: {missing_files}")
         print("Запустите предобработку данных: python data_preprocessing.py")
         return False
     
-    print("✅ Все файлы данных найдены")
+    print("[OK] Все файлы данных найдены")
     return True
 
 
@@ -102,7 +102,7 @@ def run_cli_demo(config: Config):
     rag.initialize()
     
     print("\n" + "="*60)
-    print("🏥 МЕДИЦИНСКАЯ RAG СИСТЕМА - ПРОФЕССИОНАЛЬНАЯ ВЕРСИЯ")
+    print("МЕДИЦИНСКАЯ RAG СИСТЕМА")
     print("="*60)
     print("Система готова к работе!")
     print("Введите 'quit' для выхода")
@@ -110,42 +110,42 @@ def run_cli_demo(config: Config):
     
     while True:
         try:
-            question = input("\n❓ Ваш вопрос: ").strip()
+            question = input("\nВаш вопрос: ").strip()
             
             if question.lower() in ['quit', 'exit', 'выход']:
-                print("До свидания! 👋")
+                print("До свидания!")
                 break
             
             if not question:
                 continue
             
-            print("🔍 Поиск ответа...")
+            print("Поиск ответа...")
             response = rag.answer_question(question)
             
-            print(f"\n📋 Ответ:")
+            print("\nОтвет:")
             print(f"{response.answer}")
             
-            print(f"\n📊 Статистика:")
-            print(f"  • Время обработки: {response.metadata.processing_time:.2f}с")
-            print(f"  • Найдено документов: {response.metadata.num_documents_found}")
-            print(f"  • Релевантность: {response.metadata.best_similarity_score:.3f}")
-            print(f"  • Уверенность: {response.metadata.confidence_level}")
+            print("\nСтатистика:")
+            print(f"  - Время обработки: {response.metadata.processing_time:.2f}с")
+            print(f"  - Найдено документов: {response.metadata.num_documents_found}")
+            print(f"  - Релевантность: {response.metadata.best_similarity_score:.3f}")
+            print(f"  - Уверенность: {response.metadata.confidence_level}")
             
             if response.relevant_documents:
-                print(f"\n📚 Источники:")
+                print("\nИсточники:")
                 for i, doc in enumerate(response.relevant_documents[:2], 1):
                     print(f"  {i}. {doc.question[:50]}... (score: {doc.similarity_score:.3f})")
             
             if response.warnings:
-                print(f"\n⚠️ Предупреждения:")
+                print("\nПредупреждения:")
                 for warning in response.warnings:
-                    print(f"  • {warning}")
+                    print(f"  - {warning}")
             
         except KeyboardInterrupt:
-            print("\n\nДо свидания! 👋")
+            print("\n\nДо свидания!")
             break
         except Exception as e:
-            print(f"❌ Ошибка: {e}")
+            print(f"[ERROR] Ошибка: {e}")
 
 
 def run_evaluation(config: Config):
@@ -162,34 +162,41 @@ def run_evaluation(config: Config):
     results = evaluator.run_full_evaluation()
     
     print("\n" + "="*50)
-    print("📊 РЕЗУЛЬТАТЫ ОЦЕНКИ")
+    print("РЕЗУЛЬТАТЫ ОЦЕНКИ")
     print("="*50)
     
     print(f"Общий балл: {results['overall_score']:.3f}/1.0")
     print(f"Тестовых вопросов: {results['test_size']}")
     
-    print(f"\n🔍 Качество поиска:")
+    print("\nКачество поиска:")
     print(f"  Precision: {results['retrieval_quality']['precision']:.3f}")
     print(f"  Recall: {results['retrieval_quality']['recall']:.3f}")
     print(f"  F1-Score: {results['retrieval_quality']['f1_score']:.3f}")
     
-    print(f"\n💬 Качество ответов:")
+    print("\nКачество ответов:")
     print(f"  Семантическое сходство: {results['answer_quality']['semantic_similarity']:.3f}")
     print(f"  Пересечение ключевых слов: {results['answer_quality']['keyword_overlap']:.3f}")
     print(f"  Средняя длина ответа: {results['answer_quality']['avg_answer_length']:.1f} слов")
     
-    print(f"\n⏱️ Время отклика:")
+    print("\nВремя отклика:")
     print(f"  Среднее время: {results['response_time']['avg_response_time']:.2f}с")
     print(f"  Медианное время: {results['response_time']['median_response_time']:.2f}с")
     
-    print(f"\n💡 Рекомендации:")
+    print("\nРекомендации:")
     for i, rec in enumerate(results['recommendations'], 1):
         print(f"  {i}. {rec}")
     
     # Сохранение отчета
     evaluator.save_evaluation_report(results, "evaluation_report.json")
-    print(f"\n📄 Отчет сохранен: evaluation_report.json")
+    print("\nОтчет сохранен: evaluation_report.json")
 
+
+def run_reindex(config: Config):
+    """Перестраивает индекс и сохраняет результаты"""
+    print("Перестройка индекса...")
+    rag = MedicalRAGSystem(config)
+    rag.initialize()
+    print(f"Индекс сохранен в {config.vector_index_path}")
 
 def run_data_preprocessing():
     """Запускает предобработку данных"""
@@ -209,14 +216,14 @@ def run_data_preprocessing():
     
     # Показываем статистику
     stats = processor.get_statistics()
-    print(f"\n📊 Статистика:")
-    print(f"  • Всего пар: {stats['total_pairs']}")
-    print(f"  • Исключено: {stats['excluded_count']}")
-    print(f"  • Категории: {stats['categories']}")
-    print(f"  • Темы: {stats['topics']}")
-    print(f"  • Сложность: {stats['difficulties']}")
+    print("\nСтатистика:")
+    print(f"  - Всего пар: {stats['total_pairs']}")
+    print(f"  - Исключено: {stats['excluded_count']}")
+    print(f"  - Категории: {stats['categories']}")
+    print(f"  - Темы: {stats['topics']}")
+    print(f"  - Сложность: {stats['difficulties']}")
     
-    print(f"\n✅ Обработанный датасет сохранен: {output_path}")
+    print(f"\n[OK] Обработанный датасет сохранен: {output_path}")
 
 
 def run_tests():
@@ -236,38 +243,39 @@ def run_tests():
 
 def show_system_info():
     """Показывает информацию о системе"""
-    print("🏥 МЕДИЦИНСКАЯ RAG СИСТЕМА - ПРОФЕССИОНАЛЬНАЯ ВЕРСИЯ")
+    print("МЕДИЦИНСКАЯ RAG СИСТЕМА")
     print("="*60)
     print("Версия: 2.0.0")
     print("Архитектура: ООП, модульная")
     print("Данные: Медицинская документация по сосудистым заболеваниям")
     print("Технологии: RAG, Sentence Transformers, FAISS, PyTorch")
     print()
-    print("📁 Структура проекта:")
-    print("  • src/medical_rag/ - Основные модули")
-    print("  • tests/ - Тесты (unit, integration, e2e)")
-    print("  • config/ - Конфигурационные файлы")
-    print("  • docs/ - Документация")
-    print("  • examples/ - Примеры использования")
+    print("Структура проекта:")
+    print("  - src/medical_rag/ - Основные модули")
+    print("  - tests/ - Тесты (unit, integration, e2e)")
+    print("  - config/ - Конфигурационные файлы")
+    print("  - docs/ - Документация")
+    print("  - examples/ - Примеры использования")
     print()
-    print("🚀 Режимы запуска:")
-    print("  • python main.py --web - Веб-интерфейс")
-    print("  • python main.py --cli - Командная строка")
-    print("  • python main.py --eval - Оценка системы")
-    print("  • python main.py --preprocess - Предобработка данных")
-    print("  • python main.py --test - Запуск тестов")
-    print("  • python main.py --info - Информация о системе")
+    print("Режимы запуска:")
+    print("  - python main.py --web - Веб-интерфейс")
+    print("  - python main.py --cli - Командная строка")
+    print("  - python main.py --eval - Оценка системы")
+    print("  - python main.py --preprocess - Предобработка данных")
+    print("  - python main.py --test - Запуск тестов")
+    print("  - python main.py --info - Информация о системе")
 
 
 def main():
     """Главная функция"""
-    parser = argparse.ArgumentParser(description="Медицинская RAG система - Профессиональная версия")
+    parser = argparse.ArgumentParser(description="Медицинская RAG система")
     parser.add_argument("--web", action="store_true", help="Запуск веб-интерфейса")
     parser.add_argument("--cli", action="store_true", help="Запуск в режиме командной строки")
     parser.add_argument("--eval", action="store_true", help="Запуск оценки системы")
     parser.add_argument("--preprocess", action="store_true", help="Предобработка данных")
     parser.add_argument("--test", action="store_true", help="Запуск тестов")
     parser.add_argument("--info", action="store_true", help="Показать информацию о системе")
+    parser.add_argument("--reindex", action="store_true", help="Перестроить индекс и сохранить результаты")
     parser.add_argument("--check", action="store_true", help="Проверить зависимости и файлы")
     parser.add_argument("--config", type=str, help="Путь к файлу конфигурации")
     parser.add_argument("--log-level", type=str, default="INFO", choices=["DEBUG", "INFO", "WARNING", "ERROR"], help="Уровень логирования")
@@ -278,19 +286,19 @@ def main():
     setup_logging(args.log_level)
     
     # Проверка зависимостей и файлов
-    if args.check or not any([args.web, args.cli, args.eval, args.preprocess, args.test, args.info]):
-        print("🔍 Проверка системы...")
+    if args.check or not any([args.web, args.cli, args.eval, args.preprocess, args.test, args.info, args.reindex]):
+        print("Проверка системы...")
         
         deps_ok = check_dependencies()
         data_ok = check_data_files()
         
         if deps_ok and data_ok:
-            print("✅ Система готова к работе!")
+            print("Система готова к работе!")
         else:
-            print("❌ Требуется установка зависимостей или предобработка данных")
+            print("Требуется установка зависимостей или предобработка данных")
             sys.exit(1)
         
-        if not any([args.web, args.cli, args.eval, args.preprocess, args.test, args.info]):
+        if not any([args.web, args.cli, args.eval, args.preprocess, args.test, args.info, args.reindex]):
             show_system_info()
             return
     
@@ -305,6 +313,8 @@ def main():
     elif args.test:
         success = run_tests()
         sys.exit(0 if success else 1)
+    elif args.reindex:
+        run_reindex(config)
     elif args.web:
         run_web_interface(config)
     elif args.cli:

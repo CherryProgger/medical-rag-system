@@ -1,0 +1,6 @@
+{
+  "num_documents": 7,
+  "num_chunks": 1029,
+  "chunk_size": 400,
+  "overlap": 80
+}

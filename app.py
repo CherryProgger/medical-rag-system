@@ -44,11 +44,10 @@ except ImportError:
     # Веб-интерфейс
     st.set_page_config(
         page_title="Medical RAG System",
-        page_icon="🏥",
         layout="wide"
     )
     
-    st.title("🏥 Medical RAG System")
+    st.title("Medical RAG System")
     st.markdown("Система ответов на вопросы по медицинской документации")
     
     # Загружаем RAG систему
