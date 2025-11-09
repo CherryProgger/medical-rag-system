@@ -44,11 +44,12 @@ cache/
 __pycache__/
 
 # Models (too large for git)
-models/
+/models/
 *.bin
 *.safetensors
 
 # Data files (optional - можно включить в репозиторий)
 # data/*.json
-# data/*.docxupload_to_github.py
+# data/*.docx
+upload_to_github.py
 .env
